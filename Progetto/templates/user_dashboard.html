@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Portale VM ProxMox{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-speedometer2"></i> La mia Dashboard</h1>
+    <a href="{{ url_for('request_vm') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Richiedi Nuova VM
+    </a>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-hourglass-split"></i> In Attesa</h5>
+                <h2 class="mb-0">{{ requests|selectattr('status', 'equalto', 'pending')|list|length }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-check-circle"></i> Approvate</h5>
+                <h2 class="mb-0">{{ requests|selectattr('status', 'equalto', 'approved')|list|length }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-danger">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-x-circle"></i> Rifiutate</h5>
+                <h2 class="mb-0">{{ requests|selectattr('status', 'equalto', 'rejected')|list|length }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h2 class="mb-3">Le mie Richieste VM</h2>
+
+{% if requests %}
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Nome VM</th>
+                <th>Tipo</th>
+                <th>Stato</th>
+                <th>Data Richiesta</th>
+                <th>Azioni</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for req in requests %}
+            <tr>
+                <td><strong>{{ req.vm_name }}</strong></td>
+                <td>
+                    <span class="badge bg-info">{{ req.get_vm_type_display() }}</span>
+                </td>
+                <td>
+                    <span class="badge bg-{{ req.get_status_badge_class() }}">
+                        {% if req.status == 'pending' %}
+                            <i class="bi bi-hourglass-split"></i> In Attesa
+                        {% elif req.status == 'approved' %}
+                            <i class="bi bi-check-circle"></i> Approvata
+                        {% elif req.status == 'rejected' %}
+                            <i class="bi bi-x-circle"></i> {% if req.error_message %}Rifiutata (Fallita){% else %}Rifiutata{% endif %}
+                        {% elif req.status == 'failed' %}
+                            <i class="bi bi-exclamation-triangle"></i> Rifiutata (Fallita)
+                        {% endif %}
+                    </span>
+                </td>
+                <td>{{ req.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td>
+                    {% if req.status == 'rejected' and req.rejection_reason %}
+                        <small class="text-danger d-block mb-1">{{ req.rejection_reason[:50] }}{% if req.rejection_reason|length > 50 %}...{% endif %}</small>
+                    {% endif %}
+                    <a href="{{ url_for('vm_details', request_id=req.id) }}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-eye"></i> Dettagli
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> Non hai ancora richiesto nessuna VM. 
+    <a href="{{ url_for('request_vm') }}" class="alert-link">Clicca qui per crearne una!</a>
+</div>
+{% endif %}
+{% endblock %}

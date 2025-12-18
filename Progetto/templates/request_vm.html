@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Richiedi Container - Portale Container ProxMox{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0"><i class="bi bi-plus-circle"></i> Richiedi Nuovo Container LXC</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('request_vm') }}">
+                    <div class="mb-3">
+                        <label for="vm_name" class="form-label">
+                            <i class="bi bi-tag"></i> Nome del Container <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="vm_name" name="vm_name" required 
+                               placeholder="es. server-web-01" pattern="[a-z0-9-]+" 
+                               title="Solo lettere minuscole, numeri e trattini">
+                        <small class="form-text text-muted">Solo lettere minuscole, numeri e trattini</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="vm_type" class="form-label">
+                            <i class="bi bi-cpu"></i> Tipo di Container <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="vm_type" name="vm_type" required>
+                            <option value="">Seleziona un tipo...</option>
+                            <option value="bronze">Bronze - Base</option>
+                            <option value="silver">Silver - Medio</option>
+                            <option value="gold">Gold - Avanzato</option>
+                        </select>
+                    </div>
+
+                    <!-- Card informativi per ogni tipo -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="card border-info" id="bronze-card">
+                                <div class="card-body">
+                                    <h5 class="card-title text-info"><i class="bi bi-trophy"></i> Bronze</h5>
+                                    <ul class="list-unstyled mb-0">
+                                        <li><i class="bi bi-cpu"></i> 1 Core CPU</li>
+                                        <li><i class="bi bi-memory"></i> 256 MB RAM</li>
+                                        <li><i class="bi bi-hdd-stack"></i> 256 MB Swap</li>
+                                        <li><i class="bi bi-hdd"></i> 2 GB Disco</li>
+                                    </ul>
+                                    <small class="text-muted">Alpine Linux - Bassa potenza</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-success" id="silver-card">
+                                <div class="card-body">
+                                    <h5 class="card-title text-success"><i class="bi bi-trophy-fill"></i> Silver</h5>
+                                    <ul class="list-unstyled mb-0">
+                                        <li><i class="bi bi-cpu"></i> 2 Core CPU</li>
+                                        <li><i class="bi bi-memory"></i> 512 MB RAM</li>
+                                        <li><i class="bi bi-hdd-stack"></i> 512 MB Swap</li>
+                                        <li><i class="bi bi-hdd"></i> 4 GB Disco</li>
+                                    </ul>
+                                    <small class="text-muted">Alpine Linux - Media potenza</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-warning" id="gold-card">
+                                <div class="card-body">
+                                    <h5 class="card-title text-warning"><i class="bi bi-trophy-fill"></i> Gold</h5>
+                                    <ul class="list-unstyled mb-0">
+                                        <li><i class="bi bi-cpu"></i> 4 Core CPU</li>
+                                        <li><i class="bi bi-memory"></i> 1 GB RAM</li>
+                                        <li><i class="bi bi-hdd-stack"></i> 1 GB Swap</li>
+                                        <li><i class="bi bi-hdd"></i> 8 GB Disco</li>
+                                    </ul>
+                                    <small class="text-muted">Alpine Linux - Alta potenza</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">
+                            <i class="bi bi-file-text"></i> Descrizione (opzionale)
+                        </label>
+                        <textarea class="form-control" id="description" name="description" rows="3" 
+                                  placeholder="Descrivi l'utilizzo previsto del container..."></textarea>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> <strong>Nota:</strong> La richiesta sarà sottoposta ad approvazione da parte di un amministratore. I container sono basati su Alpine Linux LXC.
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Annulla
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send"></i> Invia Richiesta
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Evidenzia la card quando si seleziona un tipo
+    document.getElementById('vm_type').addEventListener('change', function() {
+        // Rimuovi evidenziazione da tutte le card
+        ['bronze', 'silver', 'gold'].forEach(type => {
+            const card = document.getElementById(type + '-card');
+            card.classList.remove('bg-light', 'shadow-sm');
+        });
+        
+        // Evidenzia la card selezionata
+        if (this.value) {
+            const card = document.getElementById(this.value + '-card');
+            card.classList.add('bg-light', 'shadow-sm');
+        }
+    });
+</script>
+{% endblock %}

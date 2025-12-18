@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}Dettagli VM - Portale VM ProxMox{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-server"></i> Dettagli VM: {{ request.vm_name }}</h1>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Torna alla Dashboard
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-info-circle"></i> Informazioni Generali</h4>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th width="200">Nome VM:</th>
+                        <td><strong>{{ request.vm_name }}</strong></td>
+                    </tr>
+                    <tr>
+                        <th>Tipo:</th>
+                        <td><span class="badge bg-info">{{ request.get_vm_type_display() }}</span></td>
+                    </tr>
+                    <tr>
+                        <th>Stato:</th>
+                        <td>
+                            <span class="badge bg-{{ request.get_status_badge_class() }}">
+                                {% if request.status == 'pending' %}
+                                    <i class="bi bi-hourglass-split"></i> In Attesa di Approvazione
+                                {% elif request.status == 'approved' %}
+                                    <i class="bi bi-check-circle"></i> Approvata e Creata
+                                {% elif request.status == 'rejected' %}
+                                    <i class="bi bi-x-circle"></i> {% if request.error_message %}Rifiutata (Fallita){% else %}Rifiutata{% endif %}
+                                {% elif request.status == 'failed' %}
+                                    <i class="bi bi-exclamation-triangle"></i> Rifiutata (Fallita)
+                                {% endif %}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Richiesta da:</th>
+                        <td>{{ request.user.username }}</td>
+                    </tr>
+                    <tr>
+                        <th>Data Richiesta:</th>
+                        <td>{{ request.created_at.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                    </tr>
+                    {% if request.description %}
+                    <tr>
+                        <th>Descrizione:</th>
+                        <td>{{ request.description }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if request.approved_at %}
+                    <tr>
+                        <th>Approvata il:</th>
+                        <td>{{ request.approved_at.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if request.rejected_at %}
+                    <tr>
+                        <th>Rifiutata il:</th>
+                        <td>{{ request.rejected_at.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                    </tr>
+                    {% if request.rejection_reason %}
+                    <tr>
+                        <th>Motivo Rifiuto:</th>
+                        <td class="text-danger">{{ request.rejection_reason }}</td>
+                    </tr>
+                    {% endif %}
+                    {% endif %}
+                    {% if request.error_message and current_user.is_admin %}
+                    <tr>
+                        <th>Dettagli Tecnici (solo admin):</th>
+                        <td class="text-danger"><small>{{ request.error_message }}</small></td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        {% if request.status == 'approved' and request.hostname %}
+        <div class="card shadow mb-4 border-success">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-key"></i> Credenziali di Accesso</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label"><strong>Hostname:</strong></label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" value="{{ request.hostname }}" readonly id="hostname">
+                        <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('hostname')">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><strong>Indirizzo IP:</strong></label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" value="{% if request.ip_address %}{{ request.ip_address }}{% else %}IP non disponibile{% endif %}" readonly id="ip_address">
+                        <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('ip_address')">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                    {% if request.status == 'approved' and request.vm_id %}
+                    <form method="POST" action="{{ url_for('refresh_ip', request_id=request.id) }}" class="mt-2">
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="bi bi-arrow-clockwise"></i> Recupera IP
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><strong>Username:</strong></label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" value="{{ request.username }}" readonly id="username">
+                        <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('username')">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><strong>Password:</strong></label>
+                    <div class="input-group">
+                        <input type="password" class="form-control" value="{{ request.password }}" readonly id="password">
+                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword()">
+                            <i class="bi bi-eye" id="toggleIcon"></i>
+                        </button>
+                        <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('password')">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                </div>
+
+                {% if request.ssh_key %}
+                <div class="mb-3">
+                    <label class="form-label"><strong>Chiave SSH:</strong></label>
+                    <textarea class="form-control" rows="4" readonly id="ssh_key">{{ request.ssh_key }}</textarea>
+                    <button class="btn btn-outline-secondary btn-sm mt-2" type="button" onclick="copyToClipboard('ssh_key')">
+                        <i class="bi bi-clipboard"></i> Copia Chiave SSH
+                    </button>
+                </div>
+                {% endif %}
+
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i> <strong>Importante:</strong> Salva queste credenziali in un luogo sicuro!
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if request.status == 'pending' and current_user.is_admin %}
+        <div class="card shadow border-warning">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0"><i class="bi bi-hourglass-split"></i> In Attesa</h5>
+            </div>
+            <div class="card-body">
+                <p>Questa richiesta è in attesa di approvazione.</p>
+                <div class="d-grid gap-2">
+                    <form method="POST" action="{{ url_for('approve_request', request_id=request.id) }}">
+                        <button type="submit" class="btn btn-success w-100" onclick="return confirm('Confermi l\'approvazione?')">
+                            <i class="bi bi-check"></i> Approva
+                        </button>
+                    </form>
+                    <button type="button" class="btn btn-danger w-100" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                        <i class="bi bi-x"></i> Rifiuta
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal per rifiutare -->
+        <div class="modal fade" id="rejectModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Rifiuta Richiesta</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form method="POST" action="{{ url_for('reject_request', request_id=request.id) }}">
+                        <div class="modal-body">
+                            <p>Vuoi rifiutare la richiesta per <strong>{{ request.vm_name }}</strong>?</p>
+                            <div class="mb-3">
+                                <label for="reason" class="form-label">Motivo (opzionale)</label>
+                                <textarea class="form-control" id="reason" name="reason" rows="3"></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                            <button type="submit" class="btn btn-danger">Rifiuta</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function copyToClipboard(elementId) {
+        const element = document.getElementById(elementId);
+        element.select();
+        element.setSelectionRange(0, 99999); // Per mobile
+        
+        navigator.clipboard.writeText(element.value).then(function() {
+            // Mostra feedback visivo
+            const btn = event.target.closest('button');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="bi bi-check"></i>';
+            btn.classList.add('btn-success');
+            btn.classList.remove('btn-outline-secondary');
+            
+            setTimeout(function() {
+                btn.innerHTML = originalHTML;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-outline-secondary');
+            }, 2000);
+        });
+    }
+
+    function togglePassword() {
+        const passwordInput = document.getElementById('password');
+        const toggleIcon = document.getElementById('toggleIcon');
+        
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            toggleIcon.classList.remove('bi-eye');
+            toggleIcon.classList.add('bi-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            toggleIcon.classList.remove('bi-eye-slash');
+            toggleIcon.classList.add('bi-eye');
+        }
+    }
+</script>
+{% endblock %}
