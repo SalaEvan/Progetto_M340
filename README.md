@@ -11,3 +11,4 @@ password: Admin00$$
 per avvaire nel container entrare nella cartella /opt/flask-app/
 avviare il virtual env --> . .venv/bin/activate
 avvaire l'applicazione tramite python app.py
+sul browser poi cercare l'ip del container, 192.168.56.105
